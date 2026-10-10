@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asmaki - Asisten Evaluasi Maharah Kitabah</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        arabic: ['Amiri', 'serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            900: '#14532d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #f8fafc; }
+        .arabic-text { font-family: 'Amiri', serif; line-height: 2.2; font-size: 1.5rem; }
+        /* Animasi loading sederhana */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #0ea5e9; /* Sky blue */
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <header class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="bg-sky-100 text-sky-700 p-2 rounded-lg">
+                    <i class="fa-solid fa-feather-pointed text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-900 leading-tight">Asmaki</h1>
+                    <p class="text-xs text-slate-500 font-medium">Asisten Evaluasi Maharah Kitabah</p>
+                </div>
+            </div>
+            
+            <!-- Tambahan teks "Moch" di pojok kanan atas -->
+            <div class="text-slate-700 font-semibold text-base sm:text-lg">
+                Moch
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex flex-col lg:flex-row gap-8">
+        
+        <!-- Kolom Kiri: Pilihan Fitur & Input -->
+        <div class="w-full lg:w-[55%] flex flex-col gap-6 relative">
+            
+            <!-- Pengaturan API Key untuk Publik -->
+            <div class="bg-amber-50 rounded-2xl shadow-sm border border-amber-200 p-5 flex flex-col">
+                <label for="apiKeyInput" class="block text-sm font-bold text-amber-900 mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-key"></i> Masukkan Gemini API Key Anda
+                </label>
+                <p class="text-xs text-amber-700 mb-3 leading-relaxed">
+                    Untuk keamanan publik, aplikasi ini memerlukan API Key dari masing-masing pengguna. Dapatkan secara gratis di 
+                    <a href="https://aistudio.google.com/app/apikey" target="_blank" class="font-bold underline hover:text-amber-900">Google AI Studio</a>.
+                </p>
+                <input type="password" id="apiKeyInput" class="w-full p-3 border border-amber-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all bg-white text-sm" placeholder="Paste API Key Anda di sini (AIzaSy...)">
+            </div>
+
+            <!-- Overlay Loading -->
+            <div id="actionOverlay" class="hidden absolute inset-0 bg-white/70 backdrop-blur-[1px] z-10 rounded-2xl items-center justify-center">
+                <div class="bg-white px-5 py-3 rounded-full shadow-lg border border-slate-200 text-sm font-bold text-sky-700 flex items-center gap-3">
+                    <div class="loader !w-5 !h-5 !border-2"></div> Sedang Menganalisis...
+                </div>
+            </div>
+
+            <!-- Panel Pemilihan Fitur -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 pb-4 border-b border-slate-100 gap-3">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800">Pilih Fitur Analisis</h2>
+                        <p class="text-sm text-slate-500">Pilih satu atau beberapa fitur yang ingin dijalankan.</p>
+                    </div>
+                    <label class="flex items-center gap-2 cursor-pointer bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors">
+                        <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" class="w-4 h-4 text-sky-600 rounded focus:ring-sky-500 cursor-pointer">
+                        <span class="text-sm font-semibold text-slate-700">Pilih semua fitur</span>
+                    </label>
+                </div>
+
+                <!-- List Fitur -->
+                <div class="space-y-6">
+                    <!-- Kategori 1: Alat Teks & Terjemahan -->
+                    <div>
+                        <h3 class="text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-language"></i> Alat Teks & Terjemahan
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="kategori1-container">
+                            <!-- Injeksi JS -->
+                        </div>
+                    </div>
+
+                    <!-- Kategori 2: Penilaian 6 Poin -->
+                    <div>
+                        <h3 class="text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-chart-pie"></i> Kriteria Penilaian Kitabah
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="kategori2-container">
+                            <!-- Injeksi JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel Input Teks (Tersembunyi Awalnya) -->
+            <div id="textInputSection" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex-col transform transition-all duration-300 opacity-0 translate-y-4">
+                <label for="arabicInput" class="block text-sm font-bold text-slate-800 mb-2 flex justify-between items-center">
+                    <span>Masukkan Teks Bahasa Arab</span>
+                    <button onclick="clearText()" class="text-xs text-slate-400 hover:text-red-500 transition-colors font-medium"><i class="fa-solid fa-eraser"></i> Bersihkan</button>
+                </label>
+                <textarea id="arabicInput" dir="rtl" class="arabic-text w-full min-h-[180px] p-4 border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none resize-y transition-all bg-slate-50 mb-4" placeholder="اكتب النص العربي هنا..."></textarea>
+                
+                <!-- Tambahan untuk Unggah Gambar -->
+                <div class="mb-4 flex flex-col gap-3">
+                    <div class="flex items-center gap-3">
+                        <input type="file" id="imageInput" accept="image/png, image/jpeg, image/webp" class="hidden" onchange="handleImageUpload(event)">
+                        <button onclick="document.getElementById('imageInput').click()" class="text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-xl border border-slate-200 transition-colors flex items-center gap-2 shadow-sm">
+                            <i class="fa-solid fa-image text-sky-600"></i> Lampirkan Gambar
+                        </button>
+                        <span class="text-xs text-slate-500 font-medium">Opsional: Analisis teks dari foto/gambar</span>
+                    </div>
+                    
+                    <!-- Preview Gambar -->
+                    <div id="imagePreviewContainer" class="hidden relative inline-block w-max mt-2">
+                        <img id="imagePreview" class="h-28 w-auto rounded-lg border border-slate-300 shadow-sm object-cover" src="" alt="Preview">
+                        <button onclick="removeAttachedImage()" class="absolute -top-2 -right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 shadow-md transition-colors">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="errorMessage" class="hidden mb-4 p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-200 flex items-start gap-2">
+                    <i class="fa-solid fa-circle-exclamation mt-0.5"></i>
+                    <span id="errorText">Terjadi kesalahan.</span>
+                </div>
+
+                <button onclick="executeAnalysis()" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Mulai Analisis
+                </button>
+            </div>
+        </div>
+
+        <!-- Kolom Kanan: Tampilan Hasil -->
+        <div class="w-full lg:w-[45%] flex flex-col" id="resultContainer">
+            <!-- Placeholder Kosong -->
+            <div id="emptyState" class="w-full h-full min-h-[500px] flex flex-col justify-center items-center text-center p-10 bg-white rounded-2xl shadow-sm border border-slate-200 border-dashed">
+                <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-5 text-slate-300">
+                    <i class="fa-solid fa-clipboard-list text-3xl"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-700 mb-2">Belum Ada Hasil</h3>
+                <p class="text-slate-500 max-w-sm text-sm leading-relaxed">
+                    Pilih fitur yang diinginkan di panel sebelah kiri, masukkan teks Arab Anda, lalu klik "Mulai Analisis" untuk melihat umpan baliknya di sini.
+                </p>
+            </div>
+            
+            <!-- Kontainer Konten Dinamis -->
+            <div id="dynamicContent" class="hidden w-full h-full space-y-6"></div>
+        </div>
+
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 mt-auto py-6 relative">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col items-center justify-center gap-6">
+            
+            <!-- Tombol Panduan Penggunaan -->
+            <button onclick="showGuide()" class="flex flex-col items-center gap-2 group">
+                <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center group-hover:bg-sky-500 group-hover:text-white transition-all shadow-sm border border-slate-200 group-hover:border-sky-500">
+                    <i class="fa-solid fa-question text-xl"></i>
+                </div>
+                <span class="text-xs font-bold text-slate-500 group-hover:text-sky-600 transition-colors">Panduan Penggunaan</span>
+            </button>
+
+            <!-- Copyright -->
+            <div class="text-center text-slate-400 text-sm flex flex-col gap-1">
+                <p class="font-bold text-slate-600">Asisten Maharah Kitabah</p>
+                <p>&copy; 2026 Asmaki</p>
+            </div>
+
+        </div>
+    </footer>
+
+    <!-- Halaman Panduan Penggunaan (Ditampilkan sebagai Overlay Penuh) -->
+    <div id="guidePage" class="hidden fixed inset-0 bg-slate-50 z-[100] overflow-y-auto">
+        <div class="max-w-4xl mx-auto px-4 py-8 sm:py-12">
+            <!-- Tombol Kembali -->
+            <button onclick="hideGuide()" class="mb-8 flex items-center gap-2 text-slate-500 hover:text-sky-600 transition-colors font-bold bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-200">
+                <i class="fa-solid fa-arrow-left"></i> Kembali ke Aplikasi
+            </button>
+            
+            <!-- Konten Panduan -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-10">
+                <div class="text-center mb-10 pb-6 border-b border-slate-100">
+                    <h2 class="text-3xl font-black text-slate-800 mb-3">Panduan Penggunaan Asmaki</h2>
+                    <p class="text-slate-500 text-lg">Langkah demi langkah menggunakan Asisten Evaluasi Maharah Kitabah.</p>
+                </div>
+                
+                <div class="space-y-10">
+                    <!-- Langkah 1 -->
+                    <div class="flex gap-5 sm:gap-6">
+                        <div class="shrink-0 w-12 h-12 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center font-black text-xl border-2 border-white shadow-md">1</div>
+                        <div>
+                            <h3 class="text-xl font-bold text-slate-800 mb-2">Pilih Fitur Analisis</h3>
+                            <p class="text-slate-600 leading-relaxed text-sm sm:text-base">Pada halaman utama panel sebelah kiri, Anda akan melihat berbagai kartu fitur yang terbagi menjadi "Alat Teks & Terjemahan" dan "Kriteria Penilaian Kitabah". Klik pada kartu fitur yang Anda butuhkan. Anda dapat memilih satu fitur, beberapa fitur secara acak, atau klik kotak <strong>"Pilih semua fitur"</strong> untuk mencentang semuanya secara otomatis. Fitur yang terpilih akan disorot dengan warna biru langit.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Langkah 2 -->
+                    <div class="flex gap-5 sm:gap-6">
+                        <div class="shrink-0 w-12 h-12 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center font-black text-xl border-2 border-white shadow-md">2</div>
+                        <div>
+                            <h3 class="text-xl font-bold text-slate-800 mb-2">Masukkan Teks Bahasa Arab</h3>
+                            <p class="text-slate-600 leading-relaxed text-sm sm:text-base">Setelah Anda memilih minimal satu fitur, sebuah kotak input teks akan otomatis muncul di bawah daftar fitur. Ketik atau tempelkan (paste) tulisan atau karangan bahasa Arab Anda ke dalam kotak tersebut. Pastikan teks menggunakan huruf asli Arab/Hijaiyah agar AI dapat membacanya dengan akurat.</p>
+                        </div>
+                    </div>
+
+                    <!-- Langkah 3 -->
+                    <div class="flex gap-5 sm:gap-6">
+                        <div class="shrink-0 w-12 h-12 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center font-black text-xl border-2 border-white shadow-md">3</div>
+                        <div>
+                            <h3 class="text-xl font-bold text-slate-800 mb-2">Mulai Proses Analisis</h3>
+                            <p class="text-slate-600 leading-relaxed text-sm sm:text-base">Setelah teks dimasukkan, klik tombol biru yang bertuliskan <strong>"Mulai Analisis"</strong>. Layar akan menampilkan indikator loading sementara AI memproses evaluasi tulisan Anda. Harap tunggu beberapa saat hingga proses selesai.</p>
+                        </div>
+                    </div>
+
+                    <!-- Langkah 4 -->
+                    <div class="flex gap-5 sm:gap-6">
+                        <div class="shrink-0 w-12 h-12 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center font-black text-xl border-2 border-white shadow-md">4</div>
+                        <div>
+                            <h3 class="text-xl font-bold text-slate-800 mb-2">Baca Hasil dan Umpan Balik</h3>
+                            <p class="text-slate-600 leading-relaxed text-sm sm:text-base">Hasil akan ditampilkan di layar sebelah kanan secara rapi. Untuk alat terjemahan dan harakat, Anda bisa langsung menyalin hasilnya menggunakan tombol "Salin". Untuk fitur evaluasi (penilaian 6 kriteria), Anda akan menerima:
+                                <ul class="list-disc ml-5 mt-2 space-y-1 text-slate-600">
+                                    <li><strong>Skor:</strong> Skala 1 sampai 10.</li>
+                                    <li><strong>Analisis & Penjelasan:</strong> Rincian letak kesalahan tulisan Anda beserta alasan kaidah bahasanya.</li>
+                                    <li><strong>Saran Perbaikan:</strong> Cara membenarkan kesalahan tersebut.</li>
+                                </ul>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-12 pt-6 border-t border-slate-100 text-center">
+                    <p class="text-slate-500 font-medium">Selamat belajar dan meningkatkan kemampuan Maharah Kitabah Anda!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global System Prompt - Memaksa penggunaan huruf Hijaiyah
+        const baseSystemPrompt = `Anda adalah dosen ahli bahasa Arab (Musahhih Lughawi) spesialis evaluasi Maharah Kitabah.
+PENTING & WAJIB: Setiap kali Anda merujuk, mengutip, atau menyebutkan kata, frasa, kalimat, maupun istilah bahasa Arab di dalam penjelasan/saran Anda, Anda WAJIB MENGGUNAKAN HURUF ARAB/HIJAIYAH (contoh: بِالْعِلْمِ, فَاعِل, مُبْتَدَأ). 
+DILARANG KERAS menggunakan tulisan latin/transliterasi (seperti: bil 'ilmi, fa'il, dll) untuk merujuk pada kata bahasa Arab!
+Tugas utama Anda bukan hanya membenarkan, tetapi juga MENJELASKAN ALASAN MENGAPA sebuah kata/struktur tersebut salah (memberikan feedback edukatif).`;
+
+        // Skema JSON standar untuk evaluasi 6 kriteria
+        const evalSchema = {
+            type: "OBJECT",
+            properties: {
+                skor: { type: "INTEGER", description: "Skor penilaian dari 1 sampai 10" },
+                penjelasan: { type: "STRING", description: "Penjelasan detail evaluasi. Jika ada kesalahan, WAJIB jelaskan ALASAN MENGAPA itu salah secara kaidah. Ingat: WAJIB gunakan huruf Hijaiyah untuk kata Arab." },
+                saran: { type: "STRING", description: "Saran perbaikan untuk penulis. Ingat: WAJIB gunakan huruf Hijaiyah." }
+            },
+            required: ["skor", "penjelasan", "saran"]
+        };
+
+        // Konfigurasi untuk tiap aksi/fitur beserta deskripsinya
+        const ACTION_CONFIG = {
+            'harakat': {
+                kategori: 1,
+                title: "Teks Bersyakal (Harakat)",
+                desc: "Memberikan syakal/harakat penuh sesuai kaidah i'rab dan shorof.",
+                icon: "fa-book-quran",
+                theme: "sky",
+                prompt: "Berikan syakal/harakat penuh yang BENAR sesuai kaidah i'rab (Nahwu) dan bentuk kata (Shorof) pada teks bahasa Arab tersebut. Kembalikan hanya teks Arab yang sudah berharakat lengkap.",
+                schema: { type: "OBJECT", properties: { result: { type: "STRING", description: "Teks bahasa Arab dengan harakat lengkap" } }, required: ["result"] },
+                render: renderTextCard
+            },
+            'terjemah_full': {
+                kategori: 1,
+                title: "Terjemahan Keseluruhan",
+                desc: "Menerjemahkan teks secara keseluruhan ke bahasa Indonesia secara luwes dan tepat.",
+                icon: "fa-align-left",
+                theme: "sky",
+                prompt: "Berikan terjemahan bahasa Indonesia keseluruhan yang luwes dan tepat sesuai konteks teks bahasa Arab tersebut. PENTING: Untuk setiap kata ganti (dhamir) rujukan (seperti huwa, huma, hum, hiya, hunna, dll.), sertakan keterangan subjek/objek yang dirujuk di dalam kurung pada hasil terjemahan. Contoh: daripada hanya menulis 'Dia', tuliskan 'Dia (Allah)' atau 'Dia (Guru)' sesuai dengan konteks kalimatnya.",
+                schema: { type: "OBJECT", properties: { result: { type: "STRING", description: "Terjemahan dalam bahasa Indonesia" } }, required: ["result"] },
+                render: renderTextCard
+            },
+            'terjemah_perkata': {
+                kategori: 1,
+                title: "Terjemahan Per Kata",
+                desc: "Menerjemahkan teks kata demi kata secara berurutan untuk membedah struktur.",
+                icon: "fa-list-ul",
+                theme: "sky",
+                prompt: "Berikan terjemahan kata demi kata untuk teks bahasa Arab tersebut secara berurutan dari awal hingga akhir.",
+                schema: {
+                    type: "OBJECT",
+                    properties: {
+                        result: {
+                            type: "ARRAY",
+                            items: {
+                                type: "OBJECT",
+                                properties: { arab: { type: "STRING", description: "Kata Arab asli (berharakat)" }, arti: { type: "STRING", description: "Arti kata tersebut" } },
+                                required: ["arab", "arti"]
+                            }
+                        }
+                    }, required: ["result"]
+                },
+                render: renderWordsCard
+            },
+            'cek_ai': {
+                kategori: 1,
+                title: "Deteksi AI",
+                desc: "Memeriksa probabilitas apakah teks ditulis oleh AI (Kecerdasan Buatan) atau manusia murni.",
+                icon: "fa-robot",
+                theme: "sky",
+                prompt: "Analisis teks bahasa Arab tersebut dan tentukan probabilitas (dalam persentase 1-100%) apakah teks ini dihasilkan oleh AI (seperti ChatGPT, Gemini, dll) atau ditulis oleh manusia. Berikan alasan analisis Anda (seperti kemonotonan pola, repetisi, atau kealamian bahasa).",
+                schema: { type: "OBJECT", properties: { persentase: { type: "INTEGER", description: "Angka probabilitas AI dari 1 hingga 100" }, penjelasan: { type: "STRING", description: "Alasan mengapa teks ini dinilai buatan AI atau manusia. Ingat: WAJIB gunakan huruf Hijaiyah untuk kata Arab." } }, required: ["persentase", "penjelasan"] },
+                render: renderAICard
+            },
+            'eval_qawaid': {
+                kategori: 2,
+                title: "Tata Bahasa & Struktur",
+                desc: "Menganalisis Kesesuaian Subjek-Predikat (Al-Muthabaqah), Kebenaran I'rab, Struktur Kalimat, dan Morfologi Kata (As-Sarf).",
+                icon: "fa-scale-balanced",
+                theme: "sky",
+                prompt: "Evaluasi teks Arab tersebut dari aspek Tata Bahasa dan Struktur (Al-Qawa'id / An-Nahw wa As-Sarf). Cek keselarasan subjek-predikat, kebenaran i'rab, posisi kata, dan tashrif. JELASKAN ALASANNYA jika ada struktur yang salah atau i'rab yang tidak tepat.",
+                schema: evalSchema,
+                render: renderEvalCard
+            },
+            'eval_mufradat': {
+                kategori: 2,
+                title: "Kosa Kata & Idiom",
+                desc: "Menganalisis Variasi & Kekayaan Kosa Kata serta Ketepatan Konteks (Siyaq Al-Kalam).",
+                icon: "fa-book-bookmark",
+                theme: "sky",
+                prompt: "Evaluasi teks Arab tersebut dari aspek Kosa Kata dan Idiom (Al-Mufradat wa Al-Tarkib). Cek variasi pemilihan kata dan ketepatan konteks frasa/uslub. Jika ada pemilihan kata yang kaku atau salah konteks, JELASKAN MENGAPA itu kurang tepat dan berikan alternatifnya.",
+                schema: evalSchema,
+                render: renderEvalCard
+            },
+            'eval_imla': {
+                kategori: 2,
+                title: "Ejaan & Tanda Baca",
+                desc: "Menganalisis Kaidah Imla' (penulisan hamzah, ta' marbuthah/maftuhah) dan Tanda Baca.",
+                icon: "fa-spell-check",
+                theme: "sky",
+                prompt: "Evaluasi teks Arab tersebut dari aspek Ejaan dan Tanda Baca (Al-Imla' wa 'Alamat At-Tarqim). Cek penulisan hamzah, pembedaan ta' marbuthah/maftuhah, dan penempatan tanda baca. Jika ada salah eja, JELASKAN ALASAN kaidah imla'-nya.",
+                schema: evalSchema,
+                render: renderEvalCard
+            },
+            'eval_muhtawa': {
+                kategori: 2,
+                title: "Isi & Gagasan",
+                desc: "Menganalisis Kesesuaian Tema (Relevansi tulisan dengan topik) dan Kedalaman Ide (Kejelasan argumen & contoh).",
+                icon: "fa-lightbulb",
+                theme: "sky",
+                prompt: "Evaluasi teks Arab tersebut dari aspek Isi dan Gagasan (Al-Muhtawa wa Al-Afkar). Cek relevansi tema dan kedalaman ide beserta argumen. Berikan umpan balik mengapa gagasan kurang tepat atau kurang dalam jika dirasa kurang.",
+                schema: evalSchema,
+                render: renderEvalCard
+            },
+            'eval_tandhim': {
+                kategori: 2,
+                title: "Organisasi & Kohesi",
+                desc: "Menganalisis penggunaan Kata Hubung (Adawat Ar-Rabth) dan Koherensi/transisi antar paragraf.",
+                icon: "fa-layer-group",
+                theme: "sky",
+                prompt: "Evaluasi teks Arab tersebut dari aspek Organisasi dan Kohesi (At-Tandhim wa Al-Insijam). Cek ketepatan kata hubung (athaf, fa, dll) dan transisi antar kalimat. Jika ada penggunaan kata hubung yang rancu, JELASKAN MENGAPA itu salah secara logika bahasa.",
+                schema: evalSchema,
+                render: renderEvalCard
+            },
+            'eval_khatt': {
+                kategori: 2,
+                title: "Kejelasan Tulisan",
+                desc: "Menganalisis Keterbacaan (Wudhuh Al-Kitabah): Ketepatan kaidah penulisan bentuk huruf Arab agar tidak ambigu.",
+                icon: "fa-eye",
+                theme: "sky",
+                prompt: "Evaluasi teks Arab tersebut dari aspek Kejelasan Tulisan (Al-Khatt / Wudhuh Al-Kitabah). Karena ini teks digital, evaluasilah apakah ada susunan huruf/spasi yang berpotensi menimbulkan salah baca atau ambigu. Berikan alasannya jika ada.",
+                schema: evalSchema,
+                render: renderEvalCard
+            },
+            'eval_balaghah': {
+                kategori: 2,
+                title: "Keindahan Bahasa (Balaghah)",
+                desc: "Menganalisis nilai sastra, majaz, kinayah, dan keindahan susunan kata (Bayan, Ma'ani, Badi').",
+                icon: "fa-fan",
+                theme: "sky",
+                prompt: "Evaluasi teks Arab tersebut dari aspek Keindahan Bahasa (Al-Balaghah). Cek penggunaan majaz, kinayah, dan kesesuaian makna dengan gaya bahasa sastra Arab yang baik. JELASKAN ALASANNYA jika susunan katanya terlalu kaku/standar dan berikan alternatif yang lebih indah (baligh).",
+                schema: evalSchema,
+                render: renderEvalCard
+            }
+        };
+
+        const selectedFeatures = new Set();
+        const textInputSection = document.getElementById('textInputSection');
+
+        // Render UI Pilihan Fitur
+        function initializeUI() {
+            const cat1Container = document.getElementById('kategori1-container');
+            const cat2Container = document.getElementById('kategori2-container');
+
+            Object.entries(ACTION_CONFIG).forEach(([key, config]) => {
+                const html = `
+                <div data-id="${key}" onclick="toggleFeature(this)" class="feature-card cursor-pointer border border-slate-200 bg-white rounded-xl p-4 transition-all duration-200 relative group flex items-start gap-3">
+                    <div class="mt-0.5 bg-slate-100 text-slate-500 p-2.5 rounded-lg icon-container transition-colors shrink-0">
+                        <i class="fa-solid ${config.icon} w-4 h-4 flex items-center justify-center"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-slate-800 text-sm mb-1 title-text transition-colors leading-tight">${config.title}</h4>
+                        <p class="text-[11px] text-slate-500 desc-text transition-colors leading-relaxed">${config.desc}</p>
+                    </div>
+                    <div class="absolute top-4 right-4 text-sky-500 opacity-0 check-icon transition-opacity">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                </div>`;
+                
+                if (config.kategori === 1) cat1Container.innerHTML += html;
+                else cat2Container.innerHTML += html;
+            });
+        }
+
+        // Toggle Fitur
+        window.toggleFeature = function(element) {
+            const id = element.dataset.id;
+            const isSelected = selectedFeatures.has(id);
+
+            if (isSelected) {
+                selectedFeatures.delete(id);
+                // Unselected Styles
+                element.classList.remove('bg-sky-50', 'border-sky-300', 'ring-1', 'ring-sky-300', 'shadow-sm');
+                element.classList.add('bg-white', 'border-slate-200');
+                element.querySelector('.check-icon').classList.replace('opacity-100', 'opacity-0');
+                
+                element.querySelector('.title-text').classList.replace('text-sky-900', 'text-slate-800');
+                element.querySelector('.desc-text').classList.replace('text-sky-700', 'text-slate-500');
+                element.querySelector('.icon-container').classList.replace('bg-sky-100', 'bg-slate-100');
+                element.querySelector('.icon-container').classList.replace('text-sky-600', 'text-slate-500');
+            } else {
+                selectedFeatures.add(id);
+                // Selected Styles (Biru Langit)
+                element.classList.remove('bg-white', 'border-slate-200');
+                element.classList.add('bg-sky-50', 'border-sky-300', 'ring-1', 'ring-sky-300', 'shadow-sm');
+                element.querySelector('.check-icon').classList.replace('opacity-0', 'opacity-100');
+                
+                element.querySelector('.title-text').classList.replace('text-slate-800', 'text-sky-900');
+                element.querySelector('.desc-text').classList.replace('text-slate-500', 'text-sky-700');
+                element.querySelector('.icon-container').classList.replace('bg-slate-100', 'bg-sky-100');
+                element.querySelector('.icon-container').classList.replace('text-slate-500', 'text-sky-600');
+            }
+            updateGlobalUIState();
+        };
+
+        window.toggleSelectAll = function(checkbox) {
+            const cards = document.querySelectorAll('.feature-card');
+            const isChecked = checkbox.checked; // Simpan status checkbox
+
+            cards.forEach(card => {
+                const id = card.dataset.id;
+                const isSelected = selectedFeatures.has(id);
+                
+                // Jika dicentang tapi belum terpilih -> tambahkan style (Biru Langit)
+                if (isChecked && !isSelected) {
+                    selectedFeatures.add(id);
+                    card.classList.remove('bg-white', 'border-slate-200');
+                    card.classList.add('bg-sky-50', 'border-sky-300', 'ring-1', 'ring-sky-300', 'shadow-sm');
+                    card.querySelector('.check-icon').classList.replace('opacity-0', 'opacity-100');
+                    
+                    card.querySelector('.title-text').classList.replace('text-slate-800', 'text-sky-900');
+                    card.querySelector('.desc-text').classList.replace('text-slate-500', 'text-sky-700');
+                    card.querySelector('.icon-container').classList.replace('bg-slate-100', 'bg-sky-100');
+                    card.querySelector('.icon-container').classList.replace('text-slate-500', 'text-sky-600');
+                } 
+                // Jika hapus centang tapi masih terpilih -> hapus style (kembali Putih)
+                else if (!isChecked && isSelected) {
+                    selectedFeatures.delete(id);
+                    card.classList.remove('bg-sky-50', 'border-sky-300', 'ring-1', 'ring-sky-300', 'shadow-sm');
+                    card.classList.add('bg-white', 'border-slate-200');
+                    card.querySelector('.check-icon').classList.replace('opacity-100', 'opacity-0');
+                    
+                    card.querySelector('.title-text').classList.replace('text-sky-900', 'text-slate-800');
+                    card.querySelector('.desc-text').classList.replace('text-sky-700', 'text-slate-500');
+                    card.querySelector('.icon-container').classList.replace('bg-sky-100', 'bg-slate-100');
+                    card.querySelector('.icon-container').classList.replace('text-sky-600', 'text-slate-500');
+                }
+            });
+            
+            // Perbarui antarmuka utama (menampilkan input teks jika ada yang terpilih)
+            updateGlobalUIState();
+        };
+
+        // Fungsi Tampilkan/Sembunyikan Halaman Panduan
+        window.showGuide = function() {
+            document.getElementById('guidePage').classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; // Kunci scroll di halaman utama
+            window.scrollTo(0, 0); // Gulir ke atas untuk halaman panduan
+        };
+
+        window.hideGuide = function() {
+            document.getElementById('guidePage').classList.add('hidden');
+            document.body.style.overflow = ''; // Kembalikan scroll
+        };
+
+        function updateGlobalUIState() {
+            const allCheckbox = document.getElementById('selectAllCheckbox');
+            const totalFeatures = Object.keys(ACTION_CONFIG).length;
+
+            allCheckbox.checked = (selectedFeatures.size === totalFeatures);
+
+            if (selectedFeatures.size > 0) {
+                textInputSection.classList.remove('hidden');
+                setTimeout(() => {
+                    textInputSection.classList.remove('opacity-0', 'translate-y-4');
+                    textInputSection.classList.add('opacity-100', 'translate-y-0');
+                }, 10);
+            } else {
+                textInputSection.classList.remove('opacity-100', 'translate-y-0');
+                textInputSection.classList.add('opacity-0', 'translate-y-4');
+                setTimeout(() => {
+                    textInputSection.classList.add('hidden');
+                }, 300);
+            }
+        }
+
+        // Render Helpers untuk Hasil
+        function renderTextCard(data, config, key) {
+            const targetId = 'copyTarget_' + key;
+            const isArabic = key === 'harakat';
+            const textClass = isArabic ? "arabic-text text-slate-800 text-2xl leading-[2.5]" : "text-slate-700 leading-relaxed text-base whitespace-pre-wrap";
+            const dirAttr = isArabic ? 'dir="rtl"' : '';
+
+            return `
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col">
+                <div class="flex justify-between items-center mb-5 pb-3 border-b border-slate-100">
+                    <h3 class="font-bold text-slate-800 flex items-center gap-2 text-lg">
+                        <i class="fa-solid ${config.icon} text-${config.theme}-600"></i> ${config.title}
+                    </h3>
+                    <button onclick="copyText('${targetId}', this)" class="text-slate-400 hover:text-${config.theme}-600 text-sm flex items-center gap-1 transition-colors px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200">
+                        <i class="fa-regular fa-copy"></i> Salin
+                    </button>
+                </div>
+                <div id="${targetId}" ${dirAttr} class="${textClass} p-5 bg-slate-50 rounded-xl border border-slate-100 flex-grow">${data.result}</div>
+            </div>`;
+        }
+
+        function renderWordsCard(data, config, key) {
+            let wordsHtml = '';
+            if (data.result && Array.isArray(data.result)) {
+                wordsHtml = data.result.map(item => `
+                    <div class="flex flex-col items-center bg-white border border-slate-200 rounded-xl p-3 min-w-[90px] shadow-sm hover:shadow-md transition-shadow">
+                        <span class="arabic-text text-2xl text-slate-800 mb-3">${item.arab}</span>
+                        <span class="text-xs text-slate-700 font-bold bg-slate-100 border border-slate-200 w-full text-center py-1.5 rounded-md">${item.arti}</span>
+                    </div>
+                `).join('');
+            }
+            return `
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col">
+                <h3 class="font-bold text-slate-800 flex items-center gap-2 text-lg mb-5 pb-3 border-b border-slate-100">
+                    <i class="fa-solid ${config.icon} text-${config.theme}-600"></i> ${config.title}
+                </h3>
+                <div class="flex flex-wrap gap-4 justify-end custom-scrollbar p-2" dir="rtl">
+                    ${wordsHtml}
+                </div>
+            </div>`;
+        }
+
+        function renderAICard(data, config, key) {
+            // Logika pewarnaan berdasarkan persentase AI
+            let color = 'text-green-500'; // Manusia (Rendah AI)
+            if (data.persentase > 40) color = 'text-amber-500'; // Menengah
+            if (data.persentase > 75) color = 'text-red-500'; // Tinggi AI
+            
+            return `
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col">
+                <div class="flex justify-between items-center mb-5 pb-3 border-b border-slate-100">
+                    <h3 class="font-bold text-slate-800 flex items-center gap-2 text-lg">
+                        <i class="fa-solid ${config.icon} text-${config.theme}-600"></i> ${config.title}
+                    </h3>
+                    <div class="flex flex-col items-end">
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Probabilitas AI</span>
+                        <div class="font-black text-2xl ${color}">${data.persentase}%</div>
+                    </div>
+                </div>
+                <div class="text-slate-700 leading-relaxed text-sm whitespace-pre-wrap p-5 bg-slate-50 rounded-xl border border-slate-100">
+                    <div class="font-bold text-xs text-slate-500 mb-2 uppercase tracking-wider"><i class="fa-solid fa-magnifying-glass text-slate-400 mr-1"></i> Analisis Pola Bahasa</div>
+                    ${data.penjelasan}
+                </div>
+            </div>`;
+        }
+
+        function renderEvalCard(data, config, key) {
+            let scoreColor = 'text-green-600 bg-green-50 border-green-200';
+            if(data.skor < 6) scoreColor = 'text-red-600 bg-red-50 border-red-200';
+            else if(data.skor < 8) scoreColor = 'text-amber-600 bg-amber-50 border-amber-200';
+
+            return `
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col">
+                <div class="flex justify-between items-center mb-5 pb-4 border-b border-slate-100">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-${config.theme}-100 text-${config.theme}-600 flex items-center justify-center border border-${config.theme}-200 shrink-0">
+                            <i class="fa-solid ${config.icon} text-lg"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-800 leading-tight">${config.title}</h3>
+                        </div>
+                    </div>
+                    <div class="flex flex-col items-center bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 shadow-inner">
+                        <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">Skor</span>
+                        <span class="text-2xl font-black ${scoreColor.split(' ')[0]}">${data.skor}<span class="text-xs text-slate-400 font-medium">/10</span></span>
+                    </div>
+                </div>
+                
+                <div class="space-y-4">
+                    <div class="bg-slate-50 rounded-xl p-5 border border-slate-200">
+                        <h4 class="text-xs font-bold text-slate-700 mb-2 flex items-center gap-2 uppercase tracking-wide">
+                            <i class="fa-solid fa-magnifying-glass-chart text-slate-400"></i> Analisis & Penjelasan
+                        </h4>
+                        <p class="text-slate-700 leading-relaxed text-sm whitespace-pre-wrap">${data.penjelasan}</p>
+                    </div>
+                    
+                    <div class="bg-sky-50/50 rounded-xl p-5 border border-sky-100">
+                        <h4 class="text-xs font-bold text-slate-700 mb-2 flex items-center gap-2 uppercase tracking-wide">
+                            <i class="fa-solid fa-lightbulb text-amber-500"></i> Saran Perbaikan
+                        </h4>
+                        <p class="text-slate-700 leading-relaxed text-sm whitespace-pre-wrap">${data.saran}</p>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+
+        // Eksekusi API
+        const inputArea = document.getElementById('arabicInput');
+        const errorDiv = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        const actionOverlay = document.getElementById('actionOverlay');
+        const emptyState = document.getElementById('emptyState');
+        const dynamicContent = document.getElementById('dynamicContent');
+        
+        // State untuk menyimpan gambar
+        let currentAttachedImage = null;
+
+        // Fungsi Menangani Upload Gambar
+        window.handleImageUpload = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // Ekstrak string base64
+                const base64Data = e.target.result.split(',')[1];
+                currentAttachedImage = {
+                    mimeType: file.type,
+                    data: base64Data
+                };
+                
+                // Tampilkan Preview
+                const previewContainer = document.getElementById('imagePreviewContainer');
+                const previewImg = document.getElementById('imagePreview');
+                previewImg.src = e.target.result;
+                previewContainer.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        };
+
+        // Fungsi Menghapus Gambar Terlampir
+        window.removeAttachedImage = function() {
+            currentAttachedImage = null;
+            document.getElementById('imageInput').value = '';
+            document.getElementById('imagePreviewContainer').classList.add('hidden');
+            document.getElementById('imagePreview').src = '';
+        };
+
+        window.clearText = function() {
+            inputArea.value = '';
+            removeAttachedImage();
+            inputArea.focus();
+        };
+
+        window.executeAnalysis = async function() {
+            if (selectedFeatures.size === 0) return;
+
+            const apiKey = document.getElementById('apiKeyInput').value.trim();
+            if (!apiKey) {
+                showError("Mohon masukkan Gemini API Key Anda terlebih dahulu di kotak berwarna kuning.");
+                document.getElementById('apiKeyInput').focus();
+                return;
+            }
+            
+            // Simpan ke localStorage
+            localStorage.setItem('gemini_api_key', apiKey);
+            const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            const text = inputArea.value.trim();
+            // Validasi Input: Membutuhkan setidaknya teks ATAU gambar
+            if (!text && !currentAttachedImage) {
+                showError("Mohon masukkan teks atau unggah gambar bahasa Arab yang ingin dianalisis terlebih dahulu.");
+                inputArea.focus();
+                return;
+            }
+
+            const arabicPattern = /[\u0600-\u06FF]/;
+            // Jika teks dimasukkan, pastikan ada huruf Arab (abaikan pengecekan ini jika pengguna hanya mengirim gambar)
+            if(text && !arabicPattern.test(text)){
+                showError("Mohon pastikan teks yang dimasukkan mengandung huruf Arab/Hijaiyah.");
+                return;
+            }
+
+            hideError();
+            actionOverlay.classList.remove('hidden');
+            actionOverlay.classList.add('flex');
+            
+            try {
+                // Membangun skema JSON dan prompt gabungan secara dinamis
+                const combinedProperties = {};
+                const combinedRequired = [];
+                let combinedPrompt = `Berikut adalah input dari pengguna yang perlu dianalisis (bisa berupa teks di bawah ini, dan/atau tulisan yang terdapat di dalam gambar terlampir):\n\n"${text}"\n\n`;
+                combinedPrompt += `Lakukan tugas-tugas berikut dan berikan jawaban untuk masing-masing tugas dalam format JSON yang ditentukan:\n\n`;
+
+                for (const key of selectedFeatures) {
+                    const config = ACTION_CONFIG[key];
+                    combinedProperties[key] = config.schema;
+                    combinedRequired.push(key);
+                    combinedPrompt += `--- TUGAS: ${config.title} ---\nInstruksi: ${config.prompt}\n\n`;
+                }
+
+                const dynamicSchema = {
+                    type: "OBJECT",
+                    properties: combinedProperties,
+                    required: combinedRequired
+                };
+                
+                // Menyusun Data untuk dikirim ke API
+                const requestParts = [];
+                
+                // Sisipkan Gambar jika ada (Disarankan gambar berada sebelum teks instruksi)
+                if (currentAttachedImage) {
+                    requestParts.push({
+                        inlineData: {
+                            mimeType: currentAttachedImage.mimeType,
+                            data: currentAttachedImage.data
+                        }
+                    });
+                }
+                
+                // Masukkan teks prompt
+                requestParts.push({ text: combinedPrompt });
+
+                const payload = {
+                    contents: [{ role: "user", parts: requestParts }],
+                    systemInstruction: { parts: [{ text: baseSystemPrompt }] },
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: dynamicSchema,
+                        temperature: 0.1 
+                    }
+                };
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    let errMsg = `API Error: ${response.status}`;
+                    try {
+                        const errData = await response.json();
+                        if (errData.error && errData.error.message) {
+                            errMsg += ` - ${errData.error.message}`;
+                        }
+                    } catch (e) {}
+                    throw new Error(errMsg);
+                }
+
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates[0].content) {
+                    const jsonString = result.candidates[0].content.parts[0].text;
+                    const parsedData = JSON.parse(jsonString);
+                    
+                    emptyState.classList.add('hidden');
+                    dynamicContent.classList.remove('hidden');
+                    dynamicContent.innerHTML = '';
+                    
+                    // Render hasil berdasarkan urutan di ACTION_CONFIG agar rapi
+                    Object.keys(ACTION_CONFIG).forEach(key => {
+                        if (selectedFeatures.has(key) && parsedData[key]) {
+                            const config = ACTION_CONFIG[key];
+                            dynamicContent.innerHTML += config.render(parsedData[key], config, key);
+                        }
+                    });
+
+                    // Scroll untuk mobile
+                    if(window.innerWidth < 1024) {
+                        document.getElementById('resultContainer').scrollIntoView({ behavior: 'smooth' });
+                    }
+
+                } else {
+                    throw new Error("Struktur respons AI tidak valid.");
+                }
+
+            } catch (err) {
+                console.error(err);
+                showError("Gagal memproses permintaan. " + (err.message || ""));
+            } finally {
+                actionOverlay.classList.add('hidden');
+                actionOverlay.classList.remove('flex');
+            }
+        };
+
+        // Helpers
+        function showError(msg) {
+            errorText.textContent = msg;
+            errorDiv.classList.remove('hidden');
+            setTimeout(hideError, 6000);
+        }
+
+        function hideError() {
+            errorDiv.classList.add('hidden');
+        }
+
+        window.copyText = function(elementId, btnElement) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            
+            const textToCopy = el.textContent || el.innerText;
+            const textarea = document.createElement("textarea");
+            textarea.value = textToCopy.trim();
+            textarea.style.position = "fixed";
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+
+            try {
+                const successful = document.execCommand('copy');
+                if(successful) {
+                    const originalHtml = btnElement.innerHTML;
+                    btnElement.innerHTML = '<i class="fa-solid fa-check text-green-500"></i> <span class="text-green-600 font-semibold">Tersalin!</span>';
+                    btnElement.classList.replace('border-slate-200', 'border-green-300');
+                    btnElement.classList.replace('bg-slate-50', 'bg-green-50');
+                    setTimeout(() => {
+                        btnElement.innerHTML = originalHtml;
+                        btnElement.classList.replace('border-green-300', 'border-slate-200');
+                        btnElement.classList.replace('bg-green-50', 'bg-slate-50');
+                    }, 2000);
+                }
+            } catch (err) {
+                console.error('Gagal menyalin', err);
+            }
+            
+            document.body.removeChild(textarea);
+        };
+
+        // Initialize App
+        initializeUI();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedKey = localStorage.getItem('gemini_api_key');
+            if(savedKey) {
+                document.getElementById('apiKeyInput').value = savedKey;
+            }
+        });
+
+    </script>
+</body>
+</html>
